@@ -83,41 +83,22 @@ através do uso de propriedades (props); isso mantém os componentes
 filhos em sincronia com os seus irmãos e também com o pai.*/
 
 class Board extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      squares: Array(9).fill(null),
-      xIsNext: true,
-    };
-  }
-
-  /*Manter o state de todos os quadrados no componente Board
-   nos permitirá determinar o vencedor no futuro*/
-  handleClick(i) {
-    /*Usado o método .slice() para criar uma cópia do array de quadrados ao
-    invés de modificar o existente. Evitar mutação nos permite manter o
-    histórico das versões anteriores do jogo intacta e reutiliza-las + tarde*/
-    const squares = this.state.squares.slice();
-    //Se alguém tiver vencido ou se o square já estiver ocupado
-    if (calculateWinner(squares) || squares[i]) {
-      return;
-    }
-    // squares[i] = 'X'
-    squares[i] = this.state.xIsNext ? 'X' : 'O'
-    this.setState({
-      squares: squares,
-      xIsNext: !this.state.xIsNext,
-    });
-  }
-
+  // Agora será controlado pelo componente Game
+  // constructor(props) {
+  //   super(props);
+  //   this.state = {
+  //     squares: Array(9).fill(null),
+  //     xIsNext: true,
+  //   };
+  // }
 
   renderSquare(i) {
     /*O state é considerado privado ao componente em que é definido,ou seja,
     nós não podemos atualizar o state do Tabuleiro diretamente do Quadrado*/
     return (
       <Square
-        value={this.state.squares[i]}
-        onClick={() => this.handleClick(i)}
+        value={this.props.squares[i]}
+        onClick={() => this.props.onClick(i)}
       />
     );
     /*Para manter a privacidade do state do Tabuleiro,
@@ -126,18 +107,18 @@ class Board extends React.Component {
   }
 
   render() {
-    const winner = calculateWinner(this.state.squares);
-    // const status = 'Next player: ' +  (this.state.xIsNext ? 'X' : 'O');
-    let status;
-    if (winner) {
-      status = 'Winner: ' + winner;
-    } else {
-      status = 'Next player: ' +  (this.state.xIsNext ? 'X' : 'O');
-    }
+    // Repassado para o Game
+    // const winner = calculateWinner(this.state.squares);
+    // // const status = 'Next player: ' +  (this.state.xIsNext ? 'X' : 'O');
+    // let status;
+    // if (winner) {
+    //   status = 'Winner: ' + winner;
+    // } else {
+    //   status = 'Next player: ' +  (this.state.xIsNext ? 'X' : 'O');
+    // }
 
     return (
       <div>
-        <div className="status">{status}</div>
         <div className="board-row">
           {this.renderSquare(0)}
           {this.renderSquare(1)}
@@ -159,14 +140,69 @@ class Board extends React.Component {
 }
 
 class Game extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      history: [{
+        squares: Array(9).fill(null),
+      }],
+      xIsNext: true,
+    };
+  }
+
+  /*Manter o state de todos os quadrados no componente Board
+   nos permitirá determinar o vencedor no futuro*/
+  handleClick(i) {
+    /*Usado o método .slice() para criar uma cópia do array de quadrados ao
+    invés de modificar o existente. Evitar mutação nos permite manter o
+    histórico das versões anteriores do jogo intacta e reutiliza-las + tarde*/
+    // const squares = this.state.squares.slice();
+
+    const history = this.state.history;
+    const current = history[history.length - 1];
+    const squares = current.squares.slice();
+
+    //Se alguém tiver vencido ou se o square já estiver ocupado
+    if (calculateWinner(squares) || squares[i]) {
+      return;
+    }
+    // squares[i] = 'X'
+    squares[i] = this.state.xIsNext ? 'X' : 'O'
+    /*Ao contrário do método de arrays push(), o método concat() não modifica o
+    array original, por isso preferimos utilizá-lo.*/
+    this.setState({
+      // squares: squares,
+      // xIsNext: !this.state.xIsNext,
+      history: history.concat([{
+        squares: squares,
+      }]),
+      xIsNext: !this.state.xIsNext,
+    });
+  }
+
   render() {
+    const history = this.state.history;
+    const current = history[history.length - 1];
+    const winner = calculateWinner(current.squares);
+
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
+
     return (
       <div className="game">
         <div className="game-board">
-          <Board />
+          <Board
+            squares={current.squares}
+            onClick={(i) => this.handleClick(i)}
+
+          />
         </div>
         <div className="game-info">
-          <div>{/* status */}</div>
+          <div>{status}</div>
           <ol>{/* TODO */}</ol>
         </div>
       </div>
