@@ -2,63 +2,77 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-class Square extends React.Component {
-  // Tirar o constructor do Quadrado, já que n manteremos + o state do jogo nele
-  // constructor (props) {
-  //   /*Em classes JavaScript, você sempre precisa chamar
-  //   super ao definir o construtor de uma subclasse.
-  //   Todas os componentes de classe React que possuem
-  //   um método constructor devem iniciá-lo
-  //   com uma chamada super (props).*/
-  //   super(props);
-  //   /*componentes React podem ter estado (state)
-  //   configurando this.state em seus construtores.*/
-  //   this.state = {
-  //     value: null,
-  //   };
-  // }
+// class Square extends React.Component {
+//   // Tirar o constructor do Quadrado, já que n manteremos + o state do jogo nele
+//   // constructor (props) {
+//   //   /*Em classes JavaScript, você sempre precisa chamar
+//   //   super ao definir o construtor de uma subclasse.
+//   //   Todas os componentes de classe React que possuem
+//   //   um método constructor devem iniciá-lo
+//   //   com uma chamada super (props).*/
+//   //   super(props);
+//   //   /*componentes React podem ter estado (state)
+//   //   configurando this.state em seus construtores.*/
+//   //   this.state = {
+//   //     value: null,
+//   //   };
+//   // }
+//
+//   render() {
+//     return (
+//       /*Passar props é a forma
+//       como os dados fluem em aplicações
+//       React, de pais para filhos.*/
+//
+//       // <button className="square" onClick={function() {
+//       //   alert('clique');
+//       // }}>
+//
+//
+//       /*onClick = {() => alert ('click')},
+//       estamos passando uma função como prop onClick.
+//       O React só chamará essa função depois de um clique.
+//       Esquecendo () => e escrevendo somente onClick = {alert ('click')}
+//       é um erro comum, e dispararia o alerta toda vez
+//       que o componente fosse renderizado novamente.*/
+//
+//       // <button className="square" onClick={() =>
+//       //   alert('clique')}>
+//       //   {this.props.value}
+//       // </button>
+//
+//
+//       /*Quando se chama setState em um componente,
+//       o React atualiza automaticamente os
+//       componentes filhos dentro dele também.*/
+//       // <button className="square"
+//       //   onClick={() => this.setState({value: 'X'})}>
+//       //   {this.state.value}
+//       // </button>
+//
+//       /*Os Squares são agora componentes controlados
+//       (controlled components) pelo Board*/
+//       <button
+//         className="square"
+//         onClick={() => this.props.onClick()}
+//       >
+//         {this.props.value}
+//       </button>
+//
+//     );
+//   }
+// }
 
-  render() {
-    return (
-      /*Passar props é a forma
-      como os dados fluem em aplicações
-      React, de pais para filhos.*/
-
-      // <button className="square" onClick={function() {
-      //   alert('clique');
-      // }}>
-
-
-      /*onClick = {() => alert ('click')},
-      estamos passando uma função como prop onClick.
-      O React só chamará essa função depois de um clique.
-      Esquecendo () => e escrevendo somente onClick = {alert ('click')}
-      é um erro comum, e dispararia o alerta toda vez
-      que o componente fosse renderizado novamente.*/
-
-      // <button className="square" onClick={() =>
-      //   alert('clique')}>
-      //   {this.props.value}
-      // </button>
-
-
-      /*Quando se chama setState em um componente,
-      o React atualiza automaticamente os
-      componentes filhos dentro dele também.*/
-      // <button className="square"
-      //   onClick={() => this.setState({value: 'X'})}>
-      //   {this.state.value}
-      // </button>
-
-      <button
-        className="square"
-        onClick={() => this.props.onClick()}
-      >
-        {this.props.value}
-      </button>
-
-    );
-  }
+/*componentes de função (ou componente funcional) são os mais simples de serem escritos, contém apenas um
+método render e não possuem seu próprio state. Ao invés de definir uma classe
+que extende de React.Component, nós podemos escrever uma função que recebe props
+como entrada e retorna o que deverá ser renderizado. */
+function Square (props) {
+  return (
+    <button className="square" onClick={props.onClick}>
+      {props.value}
+    </button>
+  );
 }
 
 /*Para coletar dados de múltiplos filhos (children),
@@ -73,13 +87,27 @@ class Board extends React.Component {
     super(props);
     this.state = {
       squares: Array(9).fill(null),
-    }
+      xIsNext: true,
+    };
   }
 
+  /*Manter o state de todos os quadrados no componente Board
+   nos permitirá determinar o vencedor no futuro*/
   handleClick(i) {
+    /*Usado o método .slice() para criar uma cópia do array de quadrados ao
+    invés de modificar o existente. Evitar mutação nos permite manter o
+    histórico das versões anteriores do jogo intacta e reutiliza-las + tarde*/
     const squares = this.state.squares.slice();
-    squares[i] = 'X'
-    this.setState({squares: squares});
+    //Se alguém tiver vencido ou se o square já estiver ocupado
+    if (calculateWinner(squares) || squares[i]) {
+      return;
+    }
+    // squares[i] = 'X'
+    squares[i] = this.state.xIsNext ? 'X' : 'O'
+    this.setState({
+      squares: squares,
+      xIsNext: !this.state.xIsNext,
+    });
   }
 
 
@@ -98,7 +126,14 @@ class Board extends React.Component {
   }
 
   render() {
-    const status = 'Next player: X';
+    const winner = calculateWinner(this.state.squares);
+    // const status = 'Next player: ' +  (this.state.xIsNext ? 'X' : 'O');
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+      status = 'Next player: ' +  (this.state.xIsNext ? 'X' : 'O');
+    }
 
     return (
       <div>
@@ -137,6 +172,28 @@ class Game extends React.Component {
       </div>
     );
   }
+}
+
+/*irá verificar se há um vencedor e
+retornará 'X', 'O' ou null conforme apropriado*/
+function calculateWinner(squares) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return squares[a];
+    }
+  }
+  return null;
 }
 
 // ========================================
