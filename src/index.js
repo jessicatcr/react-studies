@@ -146,6 +146,8 @@ class Game extends React.Component {
       history: [{
         squares: Array(9).fill(null),
       }],
+      // Qual passo estamos visualizando no momento
+      stepNumber: 0,
       xIsNext: true,
     };
   }
@@ -158,7 +160,11 @@ class Game extends React.Component {
     histórico das versões anteriores do jogo intacta e reutiliza-las + tarde*/
     // const squares = this.state.squares.slice();
 
-    const history = this.state.history;
+    // const history = this.state.history
+    /* Isso (o history) certifica que se nós “voltarmos no tempo”, e então
+    fizermos uma nova jogada a partir daquele ponto, descartamos todo o
+    histórico do “futuro” que agora se tornaria incorreto.*/
+    const history = this.state.history.slice(0, this.state.stepNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
@@ -176,21 +182,40 @@ class Game extends React.Component {
       history: history.concat([{
         squares: squares,
       }]),
+      stepNumber: history.length,
       xIsNext: !this.state.xIsNext,
     });
   }
 
+  jumpTo(step) {
+    this.setState({
+      stepNumber:step,
+      xIsNext: (step % 2) === 0,
+    });
+    // xIsNext para true caso o nº q estejamos atribuindo a stepNumber seja par.
+  }
+
   render() {
     const history = this.state.history;
-    const current = history[history.length - 1];
+    // const current = history[history.length - 1];
+    /*deixar de renderizar sempre a última jogada e passar a renderizar apenas
+    a jogada selecionada atualmente, de acordo com stepNumber*/
+    const current = history[this.state.stepNumber];
     const winner = calculateWinner(current.squares);
 
     const moves = history.map((step, move) => {
       const desc = move ?
         'Go to move #' + move :
         'Go to game start';
+
+      /*key não pode ser referenciado utilizando this.props.keys.
+      React automaticamente utiliza key para decidir quais componentes atualizar.
+      Um componente não pode acessar sua key.
+      Chaves não precisam ser globalmente únicas;
+      elas precisam ser únicas apenas
+      entre os componentes e seus irmãos (siblings).*/
       return (
-        <li>
+        <li key={move}>
           <button onClick={() => this.jumpTo(move)}>{desc}</button>
         </li>
       );
@@ -250,3 +275,20 @@ ReactDOM.render(
   <Game />,
   document.getElementById('root')
 );
+
+
+/*
+Melhorias a serem feitas:
+
+1. Mostrar a localização de cada jogada no formato (col,row), para cada jogada
+  no histórico.
+2. Estilizar com negrito o item da lista de jogadas que está selecionado
+  no momento.
+3. Reescrever o componente Board para utilizar 2 loops para fazer os quadrados,
+  em vez de deixá-los hardcoded.
+4. Adicionar um botão de toggle que lhe permita ordenar os jogadas em ordem
+  ascendente ou descendente.
+5. Quando alguém ganhar, destaque os 3 quadrados que causaram a vitória.
+6. Quando ninguém ganhar, exiba uma mensagem informando que o resultado foi
+  um empate.
+*/
